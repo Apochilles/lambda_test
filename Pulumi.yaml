@@ -1,0 +1,3 @@
+name: blog_linker
+runtime: nodejs
+description: A test to deploy a lambda on the cloud
