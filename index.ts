@@ -41,18 +41,17 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
     callback: async (event: LexEvent) => {
       let { slots, name } = event.currentIntent;
 
-      if (slots.post_test_one === "yes") {
-        await asyncGet();
-        await asyncPost();
+      await asyncGet();
+      await asyncPost();
+
+      if (slots.sync_evaluation === "yes") {
         return {
           dialogAction: {
-            type: "ElicitSlot",
-            intentName: name,
-            slotToElicit: "​post_test_two",
-            slots,
+            type: "Close",
+            fulfillmentState: "Fulfilled",
             message: {
               contentType: "PlainText",
-              content: "The post was successful.",
+              content: "Cool no probs.",
             },
             responseCard: {
               version: "0",
@@ -76,7 +75,7 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
         };
       }
 
-      if (slots.post_test_one === "no") {
+      if (slots.debugging_clarification === "yes") {
         return {
           dialogAction: {
             type: "Close",
