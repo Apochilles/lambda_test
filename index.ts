@@ -12,7 +12,8 @@ async function asyncPost() {
       .then((result) => {
         data = result;
 
-        console.log(data.status);
+        if (data.status == "200") console.log("Syncing successful");
+        else console.log("Syncing unsuccesful");
       });
     return await data;
   } catch (error) {
@@ -26,9 +27,7 @@ async function asyncGet() {
     const data = await axios.get(
       "https://api-staging.bloglinkerapp.com/v1/status?shop=blog-linker-test-store-staging.myshopify.com"
     );
-    console.log(data);
-
-    return await data;
+    return data;
   } catch (error) {
     console.log("error", error);
     // appropriately handle the error
@@ -41,70 +40,25 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
     callback: async (event: LexEvent) => {
       let { slots, name } = event.currentIntent;
 
-      await asyncGet();
       await asyncPost();
 
-      if (slots.sync_evaluation === "yes") {
-        return {
-          dialogAction: {
-            type: "Close",
-            fulfillmentState: "Fulfilled",
-            message: {
-              contentType: "PlainText",
-              content: "Cool no probs.",
+      (async function () {
+        let response = await asyncGet();
+        if (response.data.shop != null) {
+          return {
+            dialogAction: {
+              type: "ElicitSlot",
+              intentName: name,
+              slotToElicit: "sync_evaluation",
+              slots,
+              message: {
+                contentType: "CustomPayload",
+                content: "Success ;)",
+              },
             },
-            responseCard: {
-              version: "0",
-              contentType: "application/vnd.amazonaws.card.generic",
-              genericAttachments: [
-                {
-                  buttons: [
-                    {
-                      text: "further help",
-                      value: "help",
-                    },
-                    {
-                      text: "Give us feedback!",
-                      value: "hello",
-                    },
-                  ],
-                },
-              ],
-            },
-          },
-        };
-      }
-
-      if (slots.debugging_clarification === "yes") {
-        return {
-          dialogAction: {
-            type: "Close",
-            fulfillmentState: "Fulfilled",
-            message: {
-              contentType: "PlainText",
-              content: "Cool no probs.",
-            },
-            responseCard: {
-              version: "0",
-              contentType: "application/vnd.amazonaws.card.generic",
-              genericAttachments: [
-                {
-                  buttons: [
-                    {
-                      text: "further help",
-                      value: "help",
-                    },
-                    {
-                      text: "Give us feedback!",
-                      value: "hello",
-                    },
-                  ],
-                },
-              ],
-            },
-          },
-        };
-      }
+          };
+        } else return console.log("hi");
+      })();
 
       return {
         dialogAction: {
