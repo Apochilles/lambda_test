@@ -1,7 +1,6 @@
 import { LexEvent } from "aws-lambda";
 import * as aws from "@pulumi/aws";
-var axios = require("axios");
-
+import axios from "axios";
 async function asyncPost() {
   let data;
   try {
@@ -30,6 +29,7 @@ async function asyncGet() {
     return data;
   } catch (error) {
     console.log("error", error);
+    return error;
     // appropriately handle the error
   }
 }
@@ -38,11 +38,11 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
   "Post_Test_Lambda",
   {
     callback: async (event: LexEvent) => {
-      let { slots, name } = event.currentIntent;
+      const { slots, name } = event.currentIntent;
       asyncPost();
 
       (async function () {
-        let response = await asyncGet();
+        const response = await asyncGet();
         if (response.data.shop != null)
           console.log("Your store is " + response.data.shop);
         else console.log("You do not have a shop");
