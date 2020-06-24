@@ -16,8 +16,19 @@ async function asyncPost() {
       });
     return await data;
   } catch (error) {
+    if (data.status == "403") console.log("Syncing unsuccesful");
     console.log("error", error);
   }
+}
+
+function delay() {
+  // `delay` returns a promise
+  return new Promise(function (resolve) {
+    // Only `delay` is able to resolve or reject the promise
+    setTimeout(function () {
+      resolve(42); // After 3 seconds, resolve the promise with value 42
+    }, 3000);
+  });
 }
 
 async function asyncGet() {
@@ -26,6 +37,7 @@ async function asyncGet() {
     const data = await axios.get(
       "https://api-staging.bloglinkerapp.com/v1/status?shop=blog-linker-test-store-staging.myshopify.com"
     );
+    await delay();
     return data;
   } catch (error) {
     console.log("error", error);
@@ -39,10 +51,9 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
   {
     callback: async (event: LexEvent) => {
       const { slots, name } = event.currentIntent;
-      asyncPost();
-
       (async function () {
         const response = await asyncGet();
+        asyncPost();
         if (response.data.shop != null)
           console.log("Your store is " + response.data.shop);
         else console.log("You do not have a shop");
@@ -274,7 +285,6 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
           },
         };
       }
-
       return {
         dialogAction: {
           type: "Delegate",
