@@ -17,6 +17,7 @@
         "@pulumi/awsx": "^0.20.0",
         "@pulumi/cloud": "^0.21.0",
         "@pulumi/pulumi": "^2.0.0",
+        "@types/aws-lambda": "^8.10.56",
         "axios": "^0.19.2",
         "eslint-config-prettier": "^6.11.0",
         "eslint-plugin-flowtype": "^5.1.3",
