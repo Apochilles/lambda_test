@@ -1,6 +1,8 @@
 import { LexEvent, LexResult, LexDialogActionDelegate } from "aws-lambda";
 import * as aws from "@pulumi/aws";
 import axios from "axios";
+
+// Makes a asynchronous POST request to sync the users the changes on the users store.
 async function asyncPost() {
   try {
     const data = await axios.post(
@@ -18,23 +20,13 @@ async function asyncPost() {
   }
 }
 
-function delay() {
-  // `delay` returns a promise
-  return new Promise(function (resolve) {
-    // Only `delay` is able to resolve or reject the promise
-    setTimeout(function () {
-      resolve(42); // After 3 seconds, resolve the promise with value 42
-    }, 3000);
-  });
-}
-
+// Makes a asynchronous GET request to get information from the users store.
 async function asyncGet() {
   try {
     // fetch data from a url endpoint
     const data = await axios.get(
       "https://api-staging.bloglinkerapp.com/v1/status?shop=blog-linker-test-store-staging.myshopify.com"
     );
-    await delay();
     return data;
   } catch (error) {
     console.log("error", error);
@@ -42,7 +34,7 @@ async function asyncGet() {
     // appropriately handle the error
   }
 }
-
+// Logs the GET request on server side to debug if it errors out on the client side.
 async function getConfirmation() {
   const response = await asyncGet();
   console.log(response);
@@ -70,35 +62,55 @@ async function getConfirmation() {
   else console.log("You do not have any related products");
 }
 
-export const someLexFunction = new aws.lambda.CallbackFunction(
-  "Post_Test_Lambda",
+export const debuggingIntent = new aws.lambda.CallbackFunction(
+  "Debugging_Lambda",
   {
     callback: async (event: LexEvent) => {
-      const { slots, name } = event.currentIntent;
+      const { slots } = event.currentIntent;
       const getResponse = await asyncGet();
       await asyncPost();
       await getConfirmation();
 
-      if (getResponse.shop === null) {
+      if (
+        getResponse.shop !== null &&
+        getResponse.blogCount !== null &&
+        getResponse.relatedPostCount !== null &&
+        getResponse.relatedProductCount !== null
+      ) {
         return {
           dialogAction: {
-            type: "ElicitSlot",
-            intentName: name,
-            slotToElicit: "no_shop",
-            slots,
+            type: "Close",
+            fulfillmentState: "Fulfilled",
+            message: {
+              contentType: "PlainText",
+              content:
+                "I have looked at your shop on our end and everything seems to be in order. ",
+            },
             responseCard: {
               version: "0",
               contentType: "application/vnd.amazonaws.card.generic",
               genericAttachments: [
                 {
+                  title: "Please select the button that best suits your issue:",
+                  imageUrl:
+                    "https://i.ytimg.com/vi/kCtUmkgtHYs/maxresdefault.jpg",
                   buttons: [
                     {
-                      text: "My problem is solved",
+                      text: "I want my product pages to show up on my blog",
                       value: "products",
                     },
                     {
-                      text: "I need more help",
-                      value: "help",
+                      text: "How do I use tags with Blog Linker",
+                      value: "tags",
+                    },
+                    {
+                      text:
+                        "How do I make my related products to populate on my blog posts",
+                      value: "populate",
+                    },
+                    {
+                      text: "My images and text look wrong ",
+                      value: "css",
                     },
                   ],
                 },
@@ -106,26 +118,34 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
             },
           },
         };
-      } else if (getResponse.blogCount === null) {
+      } else if (
+        getResponse.shop === null &&
+        getResponse.blogCount === null &&
+        getResponse.relatedPostCount === null &&
+        getResponse.relatedProductCount === null
+      ) {
         return {
           dialogAction: {
-            type: "ElicitSlot",
-            intentName: name,
-            slotToElicit: "no_blog",
-            slots,
+            type: "Close",
+            fulfillmentState: "Fulfilled",
+            message: {
+              contentType: "PlainText",
+              content:
+                "I am not detecting your Shopify store which means you have a few steps you need to work through.",
+            },
             responseCard: {
               version: "0",
               contentType: "application/vnd.amazonaws.card.generic",
               genericAttachments: [
                 {
+                  title:
+                    "Press here to learn how to integrate your Shopify store.",
+                  imageUrl:
+                    "https://i.ytimg.com/vi/kCtUmkgtHYs/maxresdefault.jpg",
                   buttons: [
                     {
-                      text: "My problem is solved",
-                      value: "products",
-                    },
-                    {
-                      text: "I need more help",
-                      value: "help​",
+                      text: "Click me",
+                      value: "store",
                     },
                   ],
                 },
@@ -133,26 +153,34 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
             },
           },
         };
-      } else if (getResponse.relatedPostCount === null) {
+      } else if (
+        getResponse.shop !== null &&
+        getResponse.blogCount === null &&
+        getResponse.relatedPostCount === null &&
+        getResponse.relatedProductCount === null
+      ) {
         return {
           dialogAction: {
-            type: "ElicitSlot",
-            intentName: name,
-            slotToElicit: "no_related_blog",
-            slots,
+            type: "Close",
+            fulfillmentState: "Fulfilled",
+            message: {
+              contentType: "PlainText",
+              content:
+                "I am detecting your shopify store but you have a few other problems.",
+            },
             responseCard: {
               version: "0",
               contentType: "application/vnd.amazonaws.card.generic",
               genericAttachments: [
                 {
+                  title:
+                    "Press here to learn how to set up your blogs and enable related post and related products.",
+                  imageUrl:
+                    "https://i.ytimg.com/vi/kCtUmkgtHYs/maxresdefault.jpg",
                   buttons: [
                     {
-                      text: "My problem is solved",
-                      value: "products",
-                    },
-                    {
-                      text: "I need more help",
-                      value: "​Debug me",
+                      text: "Click me",
+                      value: "Blog count",
                     },
                   ],
                 },
@@ -160,26 +188,71 @@ export const someLexFunction = new aws.lambda.CallbackFunction(
             },
           },
         };
-      } else if (getResponse.relatedProductCount === null) {
+      } else if (
+        getResponse.shop !== null &&
+        getResponse.blogCount !== null &&
+        getResponse.relatedPostCount === null &&
+        getResponse.relatedProductCount === null
+      ) {
         return {
           dialogAction: {
-            type: "ElicitSlot",
-            intentName: name,
-            slotToElicit: "no_related_products",
-            slots,
+            type: "Close",
+            fulfillmentState: "Fulfilled",
+            message: {
+              contentType: "PlainText",
+              content:
+                "I am detecting your shopify store and blogs but you have a few other problems. ",
+            },
+
             responseCard: {
               version: "0",
               contentType: "application/vnd.amazonaws.card.generic",
               genericAttachments: [
                 {
+                  title:
+                    "Press here to learn how to set up related post and related products.",
+                  imageUrl:
+                    "https://i.ytimg.com/vi/kCtUmkgtHYs/maxresdefault.jpg",
                   buttons: [
                     {
-                      text: "My problem is solved",
-                      value: "products",
+                      text: "Click me",
+                      value: "rel_post",
                     },
+                  ],
+                },
+              ],
+            },
+          },
+        };
+      } else if (
+        getResponse.shop !== null &&
+        getResponse.blogCount !== null &&
+        getResponse.relatedPostCount !== null &&
+        getResponse.relatedProductCount === null
+      ) {
+        return {
+          dialogAction: {
+            type: "Close",
+            fulfillmentState: "Fulfilled",
+            message: {
+              contentType: "PlainText",
+              content:
+                "I am detecting you have a shopify store but you do not have related posts or related products ",
+            },
+
+            responseCard: {
+              version: "0",
+              contentType: "application/vnd.amazonaws.card.generic",
+              genericAttachments: [
+                {
+                  title:
+                    "Press here to learn how to set up related post and related products.",
+                  imageUrl:
+                    "https://i.ytimg.com/vi/kCtUmkgtHYs/maxresdefault.jpg",
+                  buttons: [
                     {
-                      text: "I need more help",
-                      value: "​​Debug me",
+                      text: "Click me",
+                      value: "rel_prod",
                     },
                   ],
                 },
